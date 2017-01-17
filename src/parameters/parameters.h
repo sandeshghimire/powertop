@@ -66,7 +66,6 @@ extern void set_parameter_value(const char *name, double value, struct parameter
 
 struct result_bundle
 {
-	double joules;
 	double power;
 	vector <double> utilization; /* device name, device utilization %age */
 };

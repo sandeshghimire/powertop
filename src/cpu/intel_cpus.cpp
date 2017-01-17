@@ -70,8 +70,6 @@ static int intel_cpu_models[] = {
 	0	/* last entry must be zero */
 };
 
-static int intel_pstate_driver_loaded = -1;
-
 int is_supported_intel_cpu(int model)
 {
 	int i;
@@ -81,34 +79,6 @@ int is_supported_intel_cpu(int model)
 			return 1;
 
 	return 0;
-}
-
-int is_intel_pstate_driver_loaded()
-{
-	const string filename("/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver");
-	const string intel_pstate("intel_pstate");
-	char line[32] = { '\0' };
-	ifstream file;
-
-	if (intel_pstate_driver_loaded > -1)
-		return intel_pstate_driver_loaded;
-
-	file.open(filename, ios::in);
-
-	if (!file)
-		return -1;
-
-	file.getline(line, sizeof(line)-1);
-	file.close();
-
-	const string scaling_driver(line);
-	if (scaling_driver == intel_pstate) {
-		intel_pstate_driver_loaded = 1;
-	} else {
-		intel_pstate_driver_loaded = 0;
-	}
-
-	return intel_pstate_driver_loaded;
 }
 
 static uint64_t get_msr(int cpu, uint64_t offset)
@@ -205,7 +175,7 @@ void nhm_core::measurement_start(void)
 	}
 
 
-	snprintf(filename, sizeof(filename), "/sys/devices/system/cpu/cpu%i/cpufreq/stats/time_in_state", first_cpu);
+	snprintf(filename, PATH_MAX, "/sys/devices/system/cpu/cpu%i/cpufreq/stats/time_in_state", first_cpu);
 
 	file.open(filename, ios::in);
 
@@ -297,11 +267,10 @@ void nhm_core::measurement_end(void)
 
 char * nhm_core::fill_pstate_line(int line_nr, char *buffer)
 {
-	const int intel_pstate = is_intel_pstate_driver_loaded();
 	buffer[0] = 0;
 	unsigned int i;
 
-	if (!intel_pstate && total_stamp ==0) {
+	if (total_stamp ==0) {
 		for (i = 0; i < pstates.size(); i++)
 			total_stamp += pstates[i]->time_after;
 		if (total_stamp == 0)
@@ -313,11 +282,10 @@ char * nhm_core::fill_pstate_line(int line_nr, char *buffer)
 		return buffer;
 	}
 
-	if (intel_pstate > 0 || line_nr >= (int)pstates.size() || line_nr < 0)
+	if (line_nr >= (int)pstates.size() || line_nr < 0)
 		return buffer;
 
 	sprintf(buffer," %5.1f%% ", percentage(1.0* (pstates[line_nr]->time_after) / total_stamp));
-
 	return buffer;
 }
 
@@ -374,11 +342,10 @@ nhm_package::nhm_package(int model)
 
 char * nhm_package::fill_pstate_line(int line_nr, char *buffer)
 {
-	const int intel_pstate = is_intel_pstate_driver_loaded();
 	buffer[0] = 0;
 	unsigned int i;
 
-	if (!intel_pstate && total_stamp ==0) {
+	if (total_stamp ==0) {
 		for (i = 0; i < pstates.size(); i++)
 			total_stamp += pstates[i]->time_after;
 		if (total_stamp == 0)
@@ -391,11 +358,10 @@ char * nhm_package::fill_pstate_line(int line_nr, char *buffer)
 		return buffer;
 	}
 
-	if (intel_pstate > 0 || line_nr >= (int)pstates.size() || line_nr < 0)
+	if (line_nr >= (int)pstates.size() || line_nr < 0)
 		return buffer;
 
 	sprintf(buffer," %5.1f%% ", percentage(1.0* (pstates[line_nr]->time_after) / total_stamp));
-
 	return buffer;
 }
 
@@ -551,7 +517,7 @@ void nhm_cpu::measurement_start(void)
 
 	insert_cstate("active", _("C0 active"), 0, aperf_before, 1);
 
-	snprintf(filename, sizeof(filename), "/sys/devices/system/cpu/cpu%i/cpufreq/stats/time_in_state", first_cpu);
+	snprintf(filename, PATH_MAX, "/sys/devices/system/cpu/cpu%i/cpufreq/stats/time_in_state", first_cpu);
 
 	file.open(filename, ios::in);
 
@@ -560,7 +526,7 @@ void nhm_cpu::measurement_start(void)
 
 		while (file) {
 			uint64_t f;
-			file.getline(line, sizeof(line));
+			file.getline(line, 1024);
 			f = strtoull(line, NULL, 10);
 			account_freq(f, 0);
 		}
@@ -607,7 +573,7 @@ void nhm_cpu::measurement_end(void)
 char * nhm_cpu::fill_pstate_name(int line_nr, char *buffer)
 {
 	if (line_nr == LEVEL_C0) {
-		sprintf(buffer, _("Average"));
+		sprintf(buffer, _("Actual"));
 		return buffer;
 	}
 	return cpu_linux::fill_pstate_name(line_nr, buffer);
@@ -615,9 +581,7 @@ char * nhm_cpu::fill_pstate_name(int line_nr, char *buffer)
 
 char * nhm_cpu::fill_pstate_line(int line_nr, char *buffer)
 {
-	const int intel_pstate = is_intel_pstate_driver_loaded();
-
-	if (!intel_pstate && total_stamp ==0) {
+	if (total_stamp ==0) {
 		unsigned int i;
 		for (i = 0; i < pstates.size(); i++)
 			total_stamp += pstates[i]->time_after;
@@ -636,12 +600,12 @@ char * nhm_cpu::fill_pstate_line(int line_nr, char *buffer)
 		hz_to_human(F, buffer, 1);
 		return buffer;
 	}
-	if (intel_pstate > 0 || line_nr >= (int)pstates.size() || line_nr < 0)
+	if (line_nr >= (int)pstates.size() || line_nr < 0)
 		return buffer;
 
 	sprintf(buffer," %5.1f%% ", percentage(1.0* (pstates[line_nr]->time_after) / total_stamp));
-
 	return buffer;
+
 }
 
 

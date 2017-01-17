@@ -787,7 +787,6 @@ void process_update_display(void)
 	unsigned int i;
 	WINDOW *win;
 	double pw;
-	double joules;
 	int tl;
 	int tlt;
 	int tlr;
@@ -817,11 +816,10 @@ void process_update_display(void)
 	}
 
 	wprintw(win, _("Estimated power: %5.1f    Measured power: %5.1f    Sum: %5.1f\n\n"),
-				all_parameters.guessed_power, global_power(), sum);
+				all_parameters.guessed_power, global_joules_consumed(), sum);
 #endif
 
-	pw = global_power();
-	joules = global_joules();
+	pw = global_joules_consumed();
 	tl = global_time_left() / 60;
 	tlt = (tl /60);
 	tlr = tl % 60;
@@ -830,8 +828,6 @@ void process_update_display(void)
 		char buf[32];
 		wprintw(win, _("The battery reports a discharge rate of %sW\n"),
 				fmt_prefix(pw, buf));
-		wprintw(win, _("The power consumed was %sJ\n"),
-				fmt_prefix(joules, buf));
 		need_linebreak = 1;
 	}
 	if (tl > 0 && pw > 0.0001) {
@@ -861,7 +857,7 @@ void process_update_display(void)
 		format_watts(all_power[i]->Witts(), power, 10);
 		if (!show_power)
 			strcpy(power, "          ");
-		snprintf(name, sizeof(name), "%s", all_power[i]->type());
+		sprintf(name, "%s", all_power[i]->type());
 
 		align_string(name, 14, 20);
 
@@ -871,18 +867,18 @@ void process_update_display(void)
 		usage[0] = 0;
 		if (all_power[i]->usage_units()) {
 			if (all_power[i]->usage() < 1000)
-				snprintf(usage, sizeof(usage), "%5.1f%s", all_power[i]->usage(), all_power[i]->usage_units());
+				sprintf(usage, "%5.1f%s", all_power[i]->usage(), all_power[i]->usage_units());
 			else
-				snprintf(usage, sizeof(usage), "%5i%s", (int)all_power[i]->usage(), all_power[i]->usage_units());
+				sprintf(usage, "%5i%s", (int)all_power[i]->usage(), all_power[i]->usage_units());
 		}
 
 		align_string(usage, 14, 20);
 
-		snprintf(events, sizeof(events), "%5.1f", all_power[i]->events());
+		sprintf(events, "%5.1f", all_power[i]->events());
 		if (!all_power[i]->show_events())
 			events[0] = 0;
 		else if (all_power[i]->events() <= 0.3)
-			snprintf(events, sizeof(events), "%5.2f", all_power[i]->events());
+			sprintf(events, "%5.2f", all_power[i]->events());
 
 		align_string(events, 12, 20);
 		wprintw(win, "%s  %s %s %s %s\n", power, usage, events, name, pretty_print(all_power[i]->description(), descr, 128));
@@ -948,7 +944,7 @@ void report_process_update_display(void)
 
 		if (!show_power)
 			strcpy(power, "          ");
-		snprintf(name, sizeof(name), "%s", all_power[i]->type());
+		sprintf(name, "%s", all_power[i]->type());
 
 		if (strcmp(name, "Device") == 0)
 			continue;
@@ -960,17 +956,17 @@ void report_process_update_display(void)
 		usage[0] = 0;
 		if (all_power[i]->usage_units()) {
 			if (all_power[i]->usage() < 1000)
-				snprintf(usage, sizeof(usage), "%5.1f%s", all_power[i]->usage(), all_power[i]->usage_units());
+				sprintf(usage, "%5.1f%s", all_power[i]->usage(), all_power[i]->usage_units());
 			else
-				snprintf(usage, sizeof(usage), "%5i%s", (int)all_power[i]->usage(), all_power[i]->usage_units());
+				sprintf(usage, "%5i%s", (int)all_power[i]->usage(), all_power[i]->usage_units());
 		}
-		snprintf(wakes, sizeof(wakes), "%5.1f", all_power[i]->wake_ups / measurement_time);
+		sprintf(wakes, "%5.1f", all_power[i]->wake_ups / measurement_time);
 		if (all_power[i]->wake_ups / measurement_time <= 0.3)
-			snprintf(wakes, sizeof(wakes), "%5.2f", all_power[i]->wake_ups / measurement_time);
-		snprintf(gpus, sizeof(gpus), "%5.1f", all_power[i]->gpu_ops / measurement_time);
-		snprintf(disks, sizeof(disks), "%5.1f (%5.1f)", all_power[i]->hard_disk_hits / measurement_time,
+			sprintf(wakes, "%5.2f", all_power[i]->wake_ups / measurement_time);
+		sprintf(gpus, "%5.1f", all_power[i]->gpu_ops / measurement_time);
+		sprintf(disks, "%5.1f (%5.1f)", all_power[i]->hard_disk_hits / measurement_time,
 				all_power[i]->disk_hits / measurement_time);
-		snprintf(xwakes, sizeof(xwakes), "%5.1f", all_power[i]->xwakes / measurement_time);
+		sprintf(xwakes, "%5.1f", all_power[i]->xwakes / measurement_time);
 		if (!all_power[i]->show_events()) {
 			wakes[0] = 0;
 			gpus[0] = 0;
@@ -1091,7 +1087,7 @@ void report_summary(void)
 
 		if (!show_power)
 			strcpy(power, "          ");
-		snprintf(name, sizeof(name), "%s", all_power[i]->type());
+		sprintf(name, "%s", all_power[i]->type());
 
 		if (i > total)
 			break;
@@ -1103,17 +1099,17 @@ void report_summary(void)
 		usage[0] = 0;
 		if (all_power[i]->usage_units()) {
 			if (all_power[i]->usage() < 1000)
-				snprintf(usage, sizeof(usage), "%5.1f%s", all_power[i]->usage_summary(),
+				sprintf(usage, "%5.1f%s", all_power[i]->usage_summary(),
 					all_power[i]->usage_units_summary());
 			else
-				snprintf(usage, sizeof(usage), "%5i%s", (int)all_power[i]->usage_summary(),
+				sprintf(usage, "%5i%s", (int)all_power[i]->usage_summary(),
 					all_power[i]->usage_units_summary());
 		}
-		snprintf(events, sizeof(events), "%5.1f", all_power[i]->events());
+		sprintf(events, "%5.1f", all_power[i]->events());
 		if (!all_power[i]->show_events())
 			events[0] = 0;
 		else if (all_power[i]->events() <= 0.3)
-			snprintf(events, sizeof(events), "%5.2f", all_power[i]->events());
+			sprintf(events, "%5.2f", all_power[i]->events());
 
 		summary_data[idx]=string(usage);
 		idx+=1;

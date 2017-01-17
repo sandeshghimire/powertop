@@ -48,7 +48,7 @@ public:
 	virtual void start_measurement(void);
 	virtual void end_measurement(void);
 
-	virtual double power(void) { return rate; }
+	virtual double joules_consumed(void) { return rate; }
 	virtual double dev_capacity(void) { return capacity; }
 };
 
